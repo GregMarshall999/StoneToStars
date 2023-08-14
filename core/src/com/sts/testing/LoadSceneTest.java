@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.model.Node;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
@@ -45,7 +46,7 @@ public class LoadSceneTest implements ApplicationListener {
         camera.update();
 
         assets = new AssetManager();
-        assets.load("testing/loadscene/invaders.g3db", Model.class);
+        assets.load("testing/loadscene/invaderscene.g3db", Model.class);
         loading = true;
 
         camController = new CameraInputController(camera);
@@ -53,28 +54,32 @@ public class LoadSceneTest implements ApplicationListener {
     }
 
     private void doneLoading() {
-        Model model = assets.get("testing/loadscene/invaders.g3db", Model.class);
-        ship = new ModelInstance(model, "ship");
-        ship.transform.setToRotation(Vector3.Y, 180).trn(0, 0, 6f);
-        instances.add(ship);
+        Model model = assets.get("testing/loadscene/invaderscene.g3db", Model.class);
 
-        for (float x = -5f; x <= 5f; x += 2f) {
-            ModelInstance block = new ModelInstance(model, "block");
-            block.transform.setToTranslation(x, 0, 3f);
-            instances.add(block);
-            blocks.add(block);
-        }
+        for(int i = 0; i < model.nodes.size; i++) {
+            String id = model.nodes.get(i).id;
+            ModelInstance instance = new ModelInstance(model, id);
+            Node node = instance.getNode(id);
 
-        for (float x = -5f; x <= 5f; x += 2f) {
-            for (float z = -8f; z <= 0f; z += 2f) {
-                ModelInstance invader = new ModelInstance(model, "invader");
-                invader.transform.setToTranslation(x, 0, z);
-                instances.add(invader);
-                invaders.add(invader);
+            instance.transform.set(node.globalTransform);
+            node.translation.set(0, 0, 0);
+            node.scale.set(1, 1, 1);
+            node.rotation.idt();
+            instance.calculateTransforms();
+
+            if(id.equals("space")) {
+                space = instance;
+                continue;
+            }
+
+            instances.add(instance);
+
+            switch (id) {
+                case "ship": ship = instance; break;
+                case "block": blocks.add(instance); break;
+                case "invader": invaders.add(instance); break;
             }
         }
-
-        space = new ModelInstance(model, "space");
 
         loading = false;
     }
