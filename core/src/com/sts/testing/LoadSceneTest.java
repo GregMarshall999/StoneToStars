@@ -45,10 +45,7 @@ public class LoadSceneTest implements ApplicationListener {
         camera.update();
 
         assets = new AssetManager();
-        assets.load("testing/loadscene/ship.obj", Model.class);
-        assets.load("testing/loadscene/block.obj", Model.class);
-        assets.load("testing/loadscene/invader.obj", Model.class);
-        assets.load("testing/loadscene/spacesphere.obj", Model.class);
+        assets.load("testing/loadscene/invaders.g3db", Model.class);
         loading = true;
 
         camController = new CameraInputController(camera);
@@ -56,29 +53,28 @@ public class LoadSceneTest implements ApplicationListener {
     }
 
     private void doneLoading() {
-        ship = new ModelInstance(assets.get("testing/loadscene/ship.obj", Model.class));
+        Model model = assets.get("testing/loadscene/invaders.g3db", Model.class);
+        ship = new ModelInstance(model, "ship");
         ship.transform.setToRotation(Vector3.Y, 180).trn(0, 0, 6f);
         instances.add(ship);
 
-        Model blockModel = assets.get("testing/loadscene/block.obj", Model.class);
         for (float x = -5f; x <= 5f; x += 2f) {
-            ModelInstance block = new ModelInstance(blockModel);
+            ModelInstance block = new ModelInstance(model, "block");
             block.transform.setToTranslation(x, 0, 3f);
             instances.add(block);
             blocks.add(block);
         }
 
-        Model invaderModel = assets.get("testing/loadscene/invader.obj", Model.class);
         for (float x = -5f; x <= 5f; x += 2f) {
             for (float z = -8f; z <= 0f; z += 2f) {
-                ModelInstance invader = new ModelInstance(invaderModel);
+                ModelInstance invader = new ModelInstance(model, "invader");
                 invader.transform.setToTranslation(x, 0, z);
                 instances.add(invader);
                 invaders.add(invader);
             }
         }
 
-        space = new ModelInstance(assets.get("testing/loadscene/spacesphere.obj", Model.class));
+        space = new ModelInstance(model, "space");
 
         loading = false;
     }
