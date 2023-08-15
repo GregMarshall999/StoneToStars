@@ -9,35 +9,32 @@ import com.badlogic.gdx.graphics.g3d.*;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.loader.G3dModelLoader;
-import com.badlogic.gdx.graphics.g3d.model.Node;
+import com.badlogic.gdx.graphics.g3d.model.NodePart;
 import com.badlogic.gdx.graphics.g3d.model.data.ModelData;
+import com.badlogic.gdx.graphics.g3d.shaders.DefaultShader;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
+import com.badlogic.gdx.graphics.g3d.utils.DefaultTextureBinder;
+import com.badlogic.gdx.graphics.g3d.utils.RenderContext;
 import com.badlogic.gdx.graphics.g3d.utils.TextureProvider;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonReader;
 
 public class Behind3DSceneTest implements ApplicationListener {
     public PerspectiveCamera cam;
     public CameraInputController camController;
-    public ModelBatch modelBatch;
+    public Shader shader;
+    public RenderContext renderContext;
     public Model model;
-    public Array<ModelInstance> instances = new Array<>();
     public Environment environment;
-
-    public Array<ModelInstance> blocks = new Array<>();
-    public Array<ModelInstance> invaders = new Array<>();
-    public ModelInstance ship;
-    public ModelInstance space;
+    public Renderable renderable;
 
     @Override
     public void create () {
-        modelBatch = new ModelBatch();
         environment = new Environment();
         environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f));
         environment.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f));
 
         cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        cam.position.set(0f, 7f, 10f);
+        cam.position.set(2f, 2f, 2f);
         cam.lookAt(0,0,0);
         cam.near = 1f;
         cam.far = 300f;
@@ -49,42 +46,18 @@ public class Behind3DSceneTest implements ApplicationListener {
         ModelLoader<ModelLoader.ModelParameters> modelLoader = new G3dModelLoader(new JsonReader());
         ModelData modelData = modelLoader.loadModelData(Gdx.files.internal("testing/behind3dscene/invaderscene.g3dj"));
         model = new Model(modelData, new TextureProvider.FileTextureProvider());
-        doneLoading();
-    }
 
-    private void doneLoading() {
-        for (int i = 0; i < model.nodes.size; i++) {
-            String id = model.nodes.get(i).id;
-            ModelInstance instance = new ModelInstance(model, id);
-            Node node = instance.getNode(id);
+        NodePart blockPart = model.getNode("ship").parts.get(0);
 
-            instance.transform.set(node.globalTransform);
-            node.translation.set(0,0,0);
-            node.scale.set(1,1,1);
-            node.rotation.idt();
-            instance.calculateTransforms();
+        renderable = new Renderable();
+        renderable.meshPart.set(blockPart.meshPart);
+        renderable.material = blockPart.material;
+        renderable.environment = environment;
+        renderable.worldTransform.idt();
 
-            if (id.equals("space")) {
-                space = instance;
-                continue;
-            }
-
-            instances.add(instance);
-
-            if (id.equals("ship"))
-                ship = instance;
-            else if (id.startsWith("block"))
-                blocks.add(instance);
-            else if (id.startsWith("invader"))
-                invaders.add(instance);
-        }
-
-        for (ModelInstance block : blocks) {
-            float r = 0.5f + 0.5f * (float)Math.random();
-            float g = 0.5f + 0.5f * (float)Math.random();
-            float b = 0.5f + 0.5f * (float)Math.random();
-            block.materials.get(0).set(ColorAttribute.createDiffuse(r, g, b, 1));
-        }
+        renderContext = new RenderContext(new DefaultTextureBinder(DefaultTextureBinder.LRU, 1));
+        shader = new DefaultShader(renderable);
+        shader.init();
     }
 
     @Override
@@ -94,17 +67,16 @@ public class Behind3DSceneTest implements ApplicationListener {
 
         camController.update();
 
-        modelBatch.begin(cam);
-        modelBatch.render(instances, environment);
-        if (space != null)
-            modelBatch.render(space);
-        modelBatch.end();
+        renderContext.begin();
+        shader.begin(cam, renderContext);
+        shader.render(renderable);
+        shader.end();
+        renderContext.end();
     }
 
     @Override
     public void dispose() {
-        modelBatch.dispose();
-        instances.clear();
+        shader.dispose();
         model.dispose();
     }
 
